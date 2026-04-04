@@ -1,112 +1,93 @@
-# expr.py — Expression AST nodes
-#
-# Each class represents one kind of expression node in the AST.
-# Every node stores the child nodes / tokens it needs, and implements
-# accept() so a Visitor can dispatch to the right visit_* method.
-#
-# Visitor pattern: instead of putting evaluation logic IN these nodes,
-# we keep the nodes as pure data and let external classes (Interpreter,
-# Printer, etc.) define what to DO with each node type.
+# expr.py
+# Defines all expression AST node classes for Lox. Each class represents one
+# kind of expression (literal values, unary/binary operations, variable reads,
+# assignments, function calls, etc.). Nodes are pure data containers with no
+# evaluation logic — they implement accept() so an external Visitor (the
+# Interpreter) can dispatch to the correct visit_* method for each node type.
 
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 5 - "Representing Code" / Section: "Metaprogramming the Trees"
+# https://craftinginterpreters.com/representing-code.html#metaprogramming-the-trees
+# Note: The book auto-generates these classes using a GenerateAst.java script.
+# I wrote them by hand in Python instead for clarity and readability.
 
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 5 - "Representing Code" / Section: "The Visitor Pattern"
+# https://craftinginterpreters.com/representing-code.html#the-visitor-pattern
 class Expr:
-    """Base class for all expression nodes."""
     def accept(self, visitor):
         raise NotImplementedError
 
-
-# ── Literal ───────────────────────────────────────────────────────────────────
-# A raw value: a number, string, boolean, or nil.
-# Example: 42  "hello"  true  nil
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 5 - "Representing Code" / Section: "Representing Code"
+# https://craftinginterpreters.com/representing-code.html
 class Literal(Expr):
     def __init__(self, value):
-        self.value = value   # Python float, str, bool, or None
+        self.value = value
 
     def accept(self, visitor):
         return visitor.visit_literal_expr(self)
 
 
-# ── Grouping ──────────────────────────────────────────────────────────────────
-# Parentheses around an expression.
-# Example: (1 + 2)
 class Grouping(Expr):
-    def __init__(self, expression: Expr):
+    def __init__(self, expression):
         self.expression = expression
 
     def accept(self, visitor):
         return visitor.visit_grouping_expr(self)
 
 
-# ── Unary ─────────────────────────────────────────────────────────────────────
-# A unary operator applied to one operand.
-# Example: -5   !true
 class Unary(Expr):
-    def __init__(self, operator, right: Expr):
-        self.operator = operator   # Token  (MINUS or BANG)
-        self.right    = right      # Expr
+    def __init__(self, operator, right):
+        self.operator = operator
+        self.right    = right
 
     def accept(self, visitor):
         return visitor.visit_unary_expr(self)
 
 
-# ── Binary ────────────────────────────────────────────────────────────────────
-# A binary operator applied to two operands.
-# Example: 1 + 2   x >= y   "hi" + "!"
 class Binary(Expr):
-    def __init__(self, left: Expr, operator, right: Expr):
-        self.left     = left       # Expr
-        self.operator = operator   # Token
-        self.right    = right      # Expr
+    def __init__(self, left, operator, right):
+        self.left     = left
+        self.operator = operator
+        self.right    = right
 
     def accept(self, visitor):
         return visitor.visit_binary_expr(self)
 
 
-# ── Logical ───────────────────────────────────────────────────────────────────
-# Short-circuit logical operators (and / or).
-# Kept separate from Binary because evaluation short-circuits.
-# Example: a and b   x or y
 class Logical(Expr):
-    def __init__(self, left: Expr, operator, right: Expr):
+    def __init__(self, left, operator, right):
         self.left     = left
-        self.operator = operator   # Token (AND or OR)
+        self.operator = operator
         self.right    = right
 
     def accept(self, visitor):
         return visitor.visit_logical_expr(self)
 
 
-# ── Variable ──────────────────────────────────────────────────────────────────
-# A variable reference (reading its value).
-# Example: x   myVar
 class Variable(Expr):
     def __init__(self, name):
-        self.name = name   # Token (IDENTIFIER)
+        self.name = name
 
     def accept(self, visitor):
         return visitor.visit_variable_expr(self)
 
 
-# ── Assign ────────────────────────────────────────────────────────────────────
-# An assignment expression (writing a value to an existing variable).
-# Example: x = 5
 class Assign(Expr):
-    def __init__(self, name, value: Expr):
-        self.name  = name    # Token (IDENTIFIER)
-        self.value = value   # Expr — the new value
+    def __init__(self, name, value):
+        self.name  = name
+        self.value = value
 
     def accept(self, visitor):
         return visitor.visit_assign_expr(self)
 
 
-# ── Call ──────────────────────────────────────────────────────────────────────
-# A function call expression.
-# Example: sayHi("world")   add(1, 2)
 class Call(Expr):
-    def __init__(self, callee: Expr, paren, arguments: list):
-        self.callee    = callee      # Expr — expression that evaluates to a callable
-        self.paren     = paren       # Token — the closing ')' used for error reporting
-        self.arguments = arguments   # list[Expr]
+    def __init__(self, callee, paren, arguments):
+        self.callee    = callee
+        self.paren     = paren
+        self.arguments = arguments
 
     def accept(self, visitor):
         return visitor.visit_call_expr(self)

@@ -1,106 +1,100 @@
-# stmt.py — Statement AST nodes
-#
-# Statements don't produce values — they cause side effects.
-# Same Visitor pattern as expr.py: pure data containers + accept().
+# stmt.py
+# Defines all statement AST node classes for Lox. Statements cause side effects
+# (printing, declaring variables, control flow, function declarations) but do
+# not produce values. Like expr.py, these are pure data containers that use the
+# Visitor pattern via accept() so the Interpreter can execute each one.
 
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 5 - "Representing Code" / Section: "The Visitor Pattern"
+# https://craftinginterpreters.com/representing-code.html#the-visitor-pattern
+# Note: Same Visitor pattern as expr.py — pure data containers + accept().
 
 class Stmt:
-    """Base class for all statement nodes."""
     def accept(self, visitor):
         raise NotImplementedError
 
 
-# ── Expression Statement ──────────────────────────────────────────────────────
-# An expression used as a statement (result is discarded).
-# Example: myFunc();   x + 1;
 class Expression(Stmt):
     def __init__(self, expression):
-        self.expression = expression   # Expr
+        self.expression = expression
 
     def accept(self, visitor):
         return visitor.visit_expression_stmt(self)
 
 
-# ── Print Statement ───────────────────────────────────────────────────────────
-# Evaluates an expression and prints its value.
-# Example: print "hello";   print 1 + 2;
 class Print(Stmt):
     def __init__(self, expression):
-        self.expression = expression   # Expr
+        self.expression = expression
 
     def accept(self, visitor):
         return visitor.visit_print_stmt(self)
 
 
-# ── Var Statement ─────────────────────────────────────────────────────────────
-# Declares a variable, optionally with an initializer.
-# Example: var x = 5;   var y;
 class Var(Stmt):
     def __init__(self, name, initializer):
-        self.name        = name          # Token (IDENTIFIER)
-        self.initializer = initializer   # Expr or None (if no "= value")
+        self.name        = name
+        self.initializer = initializer
 
     def accept(self, visitor):
         return visitor.visit_var_stmt(self)
 
 
-# ── Block Statement ───────────────────────────────────────────────────────────
-# A list of statements inside { }.
-# Creates a new nested scope when executed.
-# Example: { var x = 1; print x; }
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 8 - "Statements and State" / Section: "Blocks"
+# https://craftinginterpreters.com/statements-and-state.html#block-syntax-and-semantics
 class Block(Stmt):
     def __init__(self, statements: list):
-        self.statements = statements   # list[Stmt]
+        self.statements = statements
 
     def accept(self, visitor):
         return visitor.visit_block_stmt(self)
 
 
-# ── If Statement ──────────────────────────────────────────────────────────────
-# Conditional execution. else_branch may be None.
-# Example: if (x > 0) print x; else print "neg";
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 9 - "Control Flow" / Section: "Conditional Execution"
+# https://craftinginterpreters.com/control-flow.html#conditional-execution
 class If(Stmt):
     def __init__(self, condition, then_branch, else_branch):
-        self.condition   = condition    # Expr
-        self.then_branch = then_branch  # Stmt
-        self.else_branch = else_branch  # Stmt or None
+        self.condition   = condition
+        self.then_branch = then_branch
+        self.else_branch = else_branch
 
     def accept(self, visitor):
         return visitor.visit_if_stmt(self)
 
 
-# ── While Statement ───────────────────────────────────────────────────────────
-# Loops while condition is truthy.
-# Example: while (x > 0) { x = x - 1; }
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 9 - "Control Flow" / Section: "While Loops"
+# https://craftinginterpreters.com/control-flow.html#while-loops
 class While(Stmt):
     def __init__(self, condition, body):
-        self.condition = condition   # Expr
-        self.body      = body        # Stmt
+        self.condition = condition
+        self.body      = body
 
     def accept(self, visitor):
         return visitor.visit_while_stmt(self)
 
 
-# ── Function Declaration ──────────────────────────────────────────────────────
-# Declares a named function with parameters and a body.
-# Example: fun add(a, b) { return a + b; }
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 10 - "Functions" / Section: "Interpreting Function Declarations"
+# https://craftinginterpreters.com/functions.html#interpreting-function-declarations
 class Function(Stmt):
     def __init__(self, name, params: list, body: list):
-        self.name   = name    # Token (IDENTIFIER) — the function's name
-        self.params = params  # list[Token] — parameter name tokens
-        self.body   = body    # list[Stmt] — the statements inside { }
+        self.name   = name
+        self.params = params
+        self.body   = body
 
     def accept(self, visitor):
         return visitor.visit_function_stmt(self)
 
 
-# ── Return Statement ──────────────────────────────────────────────────────────
-# Returns a value from a function. value may be None (bare return).
-# Example: return x + 1;   return;
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 10 - "Functions" / Section: "Return Statements"
+# https://craftinginterpreters.com/functions.html#return-statements
 class Return(Stmt):
     def __init__(self, keyword, value):
-        self.keyword = keyword   # Token — used for error reporting line number
-        self.value   = value     # Expr or None
+        self.keyword = keyword
+        self.value   = value
 
     def accept(self, visitor):
         return visitor.visit_return_stmt(self)

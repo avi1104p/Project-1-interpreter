@@ -1,3 +1,9 @@
+# token.py
+# Defines the Token data class. Every token produced by the Scanner carries
+# four fields: its type (TokenType), its raw lexeme (the source text it came
+# from), its literal value (a Python float or str for numbers/strings, else
+# None), and the line number it appeared on for error reporting.
+
 from token_type import TokenType
 
 class Token:

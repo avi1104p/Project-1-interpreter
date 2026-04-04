@@ -1,13 +1,26 @@
+# lox.py
+# Entry point for the Lox interpreter. Handles two modes: running a .lox script
+# file passed as a command line argument, or an interactive REPL if no file is
+# given. Wires together the Scanner, Parser, and Interpreter in sequence. Also
+# owns all error reporting — scan errors, parse errors, and runtime errors each
+# have their own handler that prints a message with a line number and sets a
+# flag so the process exits with the correct error code.
+
 import sys
-from scanner import Scanner
-from parser  import Parser
+from scanner     import Scanner
+from parser      import Parser
+from interpreter import Interpreter
+from runtime_error import RuntimeError as LoxRuntimeError
 
 
 class Lox:
-    had_error = False
+    had_error         = False
+    had_runtime_error = False
+    interpreter       = None  # single interpreter instance reused across REPL lines
 
     @classmethod
     def main(cls):
+        cls.interpreter = Interpreter(cls.runtime_error)
         args = sys.argv[1:]
         if len(args) > 1:
             print("Usage: lox.py [script]")
@@ -24,6 +37,8 @@ class Lox:
         cls.run(source)
         if cls.had_error:
             sys.exit(65)
+        if cls.had_runtime_error:
+            sys.exit(70)
 
     @classmethod
     def run_prompt(cls):
@@ -39,22 +54,20 @@ class Lox:
 
     @classmethod
     def run(cls, source: str):
-        # ── Chapter 4: Scan ───────────────────────────────────────────────────
+        # ── Scan ──────────────────────────────────────────────────────────────
         scanner = Scanner(source, cls.scan_error)
         tokens  = scanner.scan_tokens()
         if cls.had_error:
             return
 
-        # ── Chapter 6: Parse ──────────────────────────────────────────────────
+        # ── Parse ─────────────────────────────────────────────────────────────
         parser     = Parser(tokens, cls.parse_error)
         statements = parser.parse()
         if cls.had_error:
             return
 
-        # Temporary: show what we parsed so we can verify Ch 6 works.
-        # This will be replaced by the Interpreter in Chapter 7.
-        for s in statements:
-            print(s)
+        # ── Interpret ─────────────────────────────────────────────────────────
+        cls.interpreter.interpret(statements)
 
     # ── Error reporters ───────────────────────────────────────────────────────
 
@@ -65,6 +78,12 @@ class Lox:
     @classmethod
     def parse_error(cls, token, message: str):
         cls._report(token.line, message, "")
+
+    @classmethod
+    def runtime_error(cls, error: LoxRuntimeError):
+        print(f"[line {error.token.line}] RuntimeError: {error.message}",
+              file=sys.stderr)
+        cls.had_runtime_error = True
 
     @classmethod
     def _report(cls, line: int, where: str, message: str):

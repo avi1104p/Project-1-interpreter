@@ -1,3 +1,8 @@
+# token_type.py
+# Defines the TokenType enum — a complete list of every kind of token the Lox
+# scanner can produce. Used by the Scanner to label tokens and by the Parser
+# to match against specific token kinds during recursive descent.
+
 from enum import Enum, auto
 
 class TokenType(Enum):

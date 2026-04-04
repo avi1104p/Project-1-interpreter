@@ -1,0 +1,193 @@
+// ============================================================
+// CPSC 323 - Lox Interpreter Final Test
+// Tests every rubric requirement in one file
+// ============================================================
+
+
+// ── 1. Arithmetic & String Operations (Execution Logic - 25pts) ──────────────
+
+print "-- Arithmetic --";
+print 10 + 5;           // 15
+print 10 - 3;           // 7
+print 4 * 3;            // 12
+print 10 / 4;           // 2.5
+print 10 + 5 * 2;       // 20  (tests precedence: * before +)
+print (10 + 5) * 2;     // 30  (tests grouping overrides precedence)
+
+print "-- Strings --";
+print "Hello, " + "Lox!";
+
+print "-- Comparison --";
+print 5 > 3;            // true
+print 5 < 3;            // false
+print 5 == 5;           // true
+print 5 != 3;           // true
+
+print "-- Logic --";
+print true and false;   // false
+print true or false;    // true
+print !true;            // false
+
+
+// ── 2. Variables & Print (Scanner & Parser - 30pts) ───────────────────────────
+
+print "-- Variables --";
+var x = 42;
+var name = "Lox";
+print x;                // 42
+print name;             // Lox
+
+var uninit;
+print uninit;           // nil
+
+
+// ── 3. Scoping and Shadowing (Environment & Scope - 20pts) ───────────────────
+
+print "-- Scope & Shadowing --";
+var outer = "outer";
+{
+    var outer = "inner";  // shadows outer, does NOT overwrite it
+    print outer;          // inner
+}
+print outer;              // outer  (unchanged)
+
+var a = 1;
+{
+    var b = 2;
+    {
+        var c = 3;
+        print a + b + c;  // 6  (can read all outer scopes)
+    }
+    print a + b;          // 3
+}
+print a;                  // 1
+
+
+// ── 4. Control Flow (Execution Logic - 25pts) ────────────────────────────────
+
+print "-- If / Else --";
+if (x > 10) {
+    print "big";
+} else {
+    print "small";
+}
+
+if (false) {
+    print "nope";
+} else {
+    print "else branch";
+}
+
+print "-- While --";
+var i = 0;
+while (i < 3) {
+    print i;
+    i = i + 1;
+}
+
+print "-- For --";
+for (var j = 0; j < 3; j = j + 1) {
+    print j;
+}
+
+
+// ── 5. Functions & Return Values (Functions - 15pts) ─────────────────────────
+
+print "-- Functions --";
+fun add(a, b) {
+    return a + b;
+}
+print add(3, 4);
+
+fun greet(name) {
+    print "Hello, " + name + "!";
+}
+greet("world");
+
+print "-- Recursion --";
+fun factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+print factorial(5);
+
+fun fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+print fibonacci(7);
+
+print "-- Closures --";
+fun makeCounter() {
+    var count = 0;
+    fun increment() {
+        count = count + 1;
+        return count;
+    }
+    return increment;
+}
+var counter = makeCounter();
+print counter();
+print counter();
+print counter();
+
+
+// ── 6. Error Handling (Error Handling - 10pts) ───────────────────────────────
+// Uncomment one at a time to verify each error reports a line number
+
+// print undeclaredVar;           // RuntimeError: Undefined variable
+// var y = 1 / 0;                 // RuntimeError: Division by zero
+// var z = "string" - 1;         // RuntimeError: Operands must be numbers
+// add(1, 2, 3);                  // RuntimeError: Expected 2 arguments but got 3
+
+
+// ── Expected Output ───────────────────────────────────────────────────────────
+// -- Arithmetic --
+// 15
+// 7
+// 12
+// 2.5
+// 20
+// 30
+// -- Strings --
+// Hello, Lox!
+// -- Comparison --
+// true
+// false
+// true
+// true
+// -- Logic --
+// false
+// true
+// false
+// -- Variables --
+// 42
+// Lox
+// nil
+// -- Scope & Shadowing --
+// inner
+// outer
+// 6
+// 3
+// 1
+// -- If / Else --
+// big
+// else branch
+// -- While --
+// 0
+// 1
+// 2
+// -- For --
+// 0
+// 1
+// 2
+// -- Functions --
+// 7
+// Hello, world!
+// -- Recursion --
+// 120
+// 13
+// -- Closures --
+// 1
+// 2
+// 3

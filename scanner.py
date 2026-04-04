@@ -1,7 +1,16 @@
+# scanner.py
+# The Lexer/Scanner for Lox. Takes raw source code as a string and produces a
+# flat list of Token objects. It walks the source character by character using
+# two pointers (start and current) to window over each lexeme. Handles single
+# and double character operators, string and number literals, identifiers, and
+# reserved keywords. Comments and whitespace are silently skipped.
+
 from token_type import TokenType
 from token import Token
 
-# Every Lox keyword maps to its TokenType.
+# Source: Crafting Interpreters by Robert Nystrom
+# Chapter 4 - "Scanning" / Section: "Reserved Words and Identifiers"
+# https://craftinginterpreters.com/scanning.html#reserved-words-and-identifiers
 KEYWORDS = {
     "and":    TokenType.AND,
     "class":  TokenType.CLASS,
@@ -25,32 +34,26 @@ KEYWORDS = {
 class Scanner:
     def __init__(self, source: str, error_reporter):
         self.source          = source
-        self.error_reporter  = error_reporter  # callable: (line, message) -> None
+        self.error_reporter  = error_reporter
         self.tokens: list[Token] = []
 
-        self.start   = 0   # Index of the first char of the current lexeme
-        self.current = 0   # Index of the current char being examined
-        self.line    = 1   # Current source line (1-based)
-
-    # ── Public ────────────────────────────────────────────────────────────────
+        # Source: Crafting Interpreters by Robert Nystrom
+        # Chapter 4 - "Scanning" / Section: "Lexemes and Tokens"
+        # https://craftinginterpreters.com/scanning.html#lexemes-and-tokens
+        self.start   = 0
+        self.current = 0
+        self.line    = 1
 
     def scan_tokens(self) -> list[Token]:
-        """Scan the entire source and return a list of Tokens."""
         while not self._is_at_end():
             self.start = self.current
             self._scan_token()
-
         self.tokens.append(Token(TokenType.EOF, "", None, self.line))
         return self.tokens
 
-    # ── Core scanning loop ────────────────────────────────────────────────────
-
     def _scan_token(self):
-        """Read one lexeme starting at self.start and emit the right token."""
         c = self._advance()
-
         match c:
-            # Single-character tokens
             case '(': self._add_token(TokenType.LEFT_PAREN)
             case ')': self._add_token(TokenType.RIGHT_PAREN)
             case '{': self._add_token(TokenType.LEFT_BRACE)
@@ -62,7 +65,9 @@ class Scanner:
             case ';': self._add_token(TokenType.SEMICOLON)
             case '*': self._add_token(TokenType.STAR)
 
-            # One-or-two character tokens
+            # Source: Crafting Interpreters by Robert Nystrom
+            # Chapter 4 - "Scanning" / Section: "Operators"
+            # https://craftinginterpreters.com/scanning.html#operators
             case '!':
                 self._add_token(TokenType.BANG_EQUAL if self._match('=') else TokenType.BANG)
             case '=':
@@ -72,25 +77,19 @@ class Scanner:
             case '>':
                 self._add_token(TokenType.GREATER_EQUAL if self._match('=') else TokenType.GREATER)
 
-            # Slash or comment
             case '/':
                 if self._match('/'):
-                    # A comment runs to end of line — consume but emit nothing.
                     while self._peek() != '\n' and not self._is_at_end():
                         self._advance()
                 else:
                     self._add_token(TokenType.SLASH)
 
-            # Whitespace — skip silently
             case ' ' | '\r' | '\t':
                 pass
             case '\n':
                 self.line += 1
-
-            # String literals
             case '"':
                 self._string()
-
             case _:
                 if c.isdigit():
                     self._number()
@@ -99,62 +98,56 @@ class Scanner:
                 else:
                     self.error_reporter(self.line, f"Unexpected character '{c}'.")
 
-    # ── Literal helpers ───────────────────────────────────────────────────────
-
+    # Source: Crafting Interpreters by Robert Nystrom
+    # Chapter 4 - "Scanning" / Section: "Literals" > "Strings"
+    # https://craftinginterpreters.com/scanning.html#string-literals
     def _string(self):
-        """Consume a "..." string literal, including the closing quote."""
         while self._peek() != '"' and not self._is_at_end():
             if self._peek() == '\n':
                 self.line += 1
             self._advance()
-
         if self._is_at_end():
             self.error_reporter(self.line, "Unterminated string.")
             return
-
-        self._advance()  # closing "
-
-        # Trim the surrounding quotes to get the actual string value.
+        self._advance()
         value = self.source[self.start + 1 : self.current - 1]
         self._add_token(TokenType.STRING, value)
 
+    # Source: Crafting Interpreters by Robert Nystrom
+    # Chapter 4 - "Scanning" / Section: "Literals" > "Numbers"
+    # https://craftinginterpreters.com/scanning.html#number-literals
     def _number(self):
-        """Consume an integer or decimal number literal."""
         while self._peek().isdigit():
             self._advance()
-
-        # Look for a fractional part: digits DOT digits
         if self._peek() == '.' and self._peek_next().isdigit():
-            self._advance()  # consume the '.'
+            self._advance()
             while self._peek().isdigit():
                 self._advance()
-
         value = float(self.source[self.start : self.current])
         self._add_token(TokenType.NUMBER, value)
 
+    # Source: Crafting Interpreters by Robert Nystrom
+    # Chapter 4 - "Scanning" / Section: "Reserved Words and Identifiers"
+    # https://craftinginterpreters.com/scanning.html#reserved-words-and-identifiers
     def _identifier(self):
-        """Consume an identifier or keyword."""
         while self._peek().isalnum() or self._peek() == '_':
             self._advance()
-
         text = self.source[self.start : self.current]
-        # If the text is a reserved word, use that type; otherwise IDENTIFIER.
         token_type = KEYWORDS.get(text, TokenType.IDENTIFIER)
         self._add_token(token_type)
 
-    # ── Low-level character utilities ─────────────────────────────────────────
-
+    # Source: Crafting Interpreters by Robert Nystrom
+    # Chapter 4 - "Scanning" / Section: "A Longer Look at Lookahead"
+    # https://craftinginterpreters.com/scanning.html#a-longer-look-at-lookahead
     def _is_at_end(self) -> bool:
         return self.current >= len(self.source)
 
     def _advance(self) -> str:
-        """Consume the current character and return it."""
         ch = self.source[self.current]
         self.current += 1
         return ch
 
     def _match(self, expected: str) -> bool:
-        """Consume the next char only if it equals `expected` (conditional advance)."""
         if self._is_at_end():
             return False
         if self.source[self.current] != expected:
@@ -163,18 +156,15 @@ class Scanner:
         return True
 
     def _peek(self) -> str:
-        """Look at the current char without consuming it."""
         if self._is_at_end():
             return '\0'
         return self.source[self.current]
 
     def _peek_next(self) -> str:
-        """Look one char ahead without consuming (used for decimal detection)."""
         if self.current + 1 >= len(self.source):
             return '\0'
         return self.source[self.current + 1]
 
     def _add_token(self, type: TokenType, literal=None):
-        """Emit a token from self.start to self.current."""
         text = self.source[self.start : self.current]
         self.tokens.append(Token(type, text, literal, self.line))
